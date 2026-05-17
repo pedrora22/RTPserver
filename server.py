@@ -1,80 +1,50 @@
-import cv2
 import socket
-import struct
 import time
+import random
 
-VIDEO_PATH = "video.mp4"
+from rtp_packet import RTPPacket
 
-DEST_IP = "127.0.0.1"
-DEST_PORT = 5004
+HOST = "127.0.0.1"
+PORT = 5000
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-cap = cv2.VideoCapture(VIDEO_PATH)
+sequence = 1
 
-sequence_number = 0
-timestamp = 0
-ssrc = 12345
-
-FPS = 30
-FRAME_DELAY = 1 / FPS
+print("Servidor RTP iniciado...\n")
 
 while True:
 
-    ret, frame = cap.read()
+ 
+    # SIMULAÇÃO DE PACKET LOSS
+   
+    if random.random() < 0.3:
+        print("Pacote perdido na rede")
+        print("-" * 30)
 
-    if not ret:
-        break
+        sequence += 1
 
-    # Compacta em JPEG
-    _, buffer = cv2.imencode(".jpg", frame)
+        continue
 
-    payload = buffer.tobytes()
+    mensagem = f"Frame de vídeo {sequence}"
 
-    # RTP Header
-    version = 2
-    padding = 0
-    extension = 0
-    cc = 0
+    packet = RTPPacket(sequence, mensagem)
 
-    marker = 0
-    payload_type = 26
-
-    first_byte = (
-        (version << 6)
-        | (padding << 5)
-        | (extension << 4)
-        | cc
+    server_socket.sendto(
+        packet.encode(),
+        (HOST, PORT)
     )
 
-    second_byte = (
-        (marker << 7)
-        | payload_type
-    )
+    print("Pacote enviado:")
+    print(f"Sequência: {sequence}")
+    print(f"Timestamp: {packet.timestamp}")
+    print("-" * 30)
 
-    rtp_header = struct.pack(
-        "!BBHII",
-        first_byte,
-        second_byte,
-        sequence_number,
-        timestamp,
-        ssrc
-    )
+    sequence += 1
 
-    packet = rtp_header + payload
+    
+    # SIMULAÇÃO DE JITTER
+    
+    jitter = random.uniform(0.1, 1.5)
 
-    sock.sendto(packet, (DEST_IP, DEST_PORT))
-
-    print(
-        f"Frame={sequence_number} "
-        f"Timestamp={timestamp}"
-    )
-
-    sequence_number += 1
-
-    timestamp += 3000
-
-    time.sleep(FRAME_DELAY)
-
-cap.release()
-sock.close()
+    time.sleep(jitter)

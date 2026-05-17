@@ -1,39 +1,22 @@
 import socket
-import struct
-import cv2
-import numpy as np
+from rtp_packet import RTPPacket
 
-PORT = 5004
+HOST = "127.0.0.1"
+PORT = 5000
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-sock.bind(("0.0.0.0", PORT))
+client_socket.bind((HOST, PORT))
+
+print("Cliente RTP aguardando pacotes...\n")
 
 while True:
+    data, addr = client_socket.recvfrom(2048)
 
-    packet, addr = sock.recvfrom(65535)
+    packet = RTPPacket.decode(data)
 
-    header = packet[:12]
-    payload = packet[12:]
-
-    fields = struct.unpack("!BBHII", header)
-
-    sequence_number = fields[2]
-    timestamp = fields[3]
-
-    print(
-        f"Recebido Seq={sequence_number} "
-        f"Timestamp={timestamp}"
-    )
-
-    jpg = np.frombuffer(payload, dtype=np.uint8)
-
-    frame = cv2.imdecode(jpg, cv2.IMREAD_COLOR)
-
-    if frame is not None:
-        cv2.imshow("RTP Client", frame)
-
-    if cv2.waitKey(1) == 27:
-        break
-
-cv2.destroyAllWindows()
+    print("Pacote recebido:")
+    print(f"Sequência: {packet['sequence']}")
+    print(f"Timestamp: {packet['timestamp']}")
+    print(f"Payload: {packet['payload']}")
+    print("-" * 30)
