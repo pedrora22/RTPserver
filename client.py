@@ -1,22 +1,32 @@
 import socket
+import cv2
+import numpy as np
+
 from rtp_packet import RTPPacket
 
 HOST = "127.0.0.1"
 PORT = 5000
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 client_socket.bind((HOST, PORT))
 
 print("Cliente RTP aguardando pacotes...\n")
+print("Pressione 'q' na janela do vídeo para sair.\n")
 
 while True:
-    data, addr = client_socket.recvfrom(2048)
+    data, addr = client_socket.recvfrom(65536)
 
     packet = RTPPacket.decode(data)
 
-    print("Pacote recebido:")
-    print(f"Sequência: {packet['sequence']}")
-    print(f"Timestamp: {packet['timestamp']}")
-    print(f"Payload: {packet['payload']}")
-    print("-" * 30)
+    frame_data = np.frombuffer(packet['payload'], dtype=np.uint8)
+    frame = cv2.imdecode(frame_data, cv2.IMREAD_COLOR)
+
+    if frame is not None:
+        cv2.imshow("RTP Video Stream", frame)
+        print(f"Frame {packet['sequence']} recebido | ts={packet['timestamp']}")
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+client_socket.close()
+cv2.destroyAllWindows()
