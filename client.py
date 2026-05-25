@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 
 from rtp_packet import RTPPacket
+from security import decrypt
 
 HOST = "127.0.0.1"
 PORT = 5000
@@ -18,7 +19,7 @@ while True:
 
     packet = RTPPacket.decode(data)
 
-    frame_data = np.frombuffer(packet['payload'], dtype=np.uint8)
+    frame_data = np.frombuffer(decrypt(packet['payload']), dtype=np.uint8)
     frame = cv2.imdecode(frame_data, cv2.IMREAD_COLOR)
 
     if frame is not None:

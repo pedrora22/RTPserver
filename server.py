@@ -4,6 +4,7 @@ import random
 import cv2
 
 from rtp_packet import RTPPacket
+from security import encrypt
 
 HOST = "127.0.0.1"
 PORT = 5000
@@ -35,7 +36,7 @@ while True:
 
     frame = cv2.resize(frame, (FRAME_WIDTH, FRAME_HEIGHT))
     _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY])
-    payload = buffer.tobytes()
+    payload = encrypt(buffer.tobytes())
 
     # SIMULAÇÃO DE PACKET LOSS
     if random.random() < PACKET_LOSS_RATE:
